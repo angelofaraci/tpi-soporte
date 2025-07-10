@@ -1,0 +1,11 @@
+<h1>Álbum Principal: {{ album_principal.title }}</h1>
+<p>Género: {{ album_principal.genre }}</p>
+
+<h2>Recomendaciones:</h2>
+<ul>
+  {% for disco in recomendaciones %}
+    <li>{{ disco.title }} - Puntuación: {{ disco.community.rating.average }}</li>
+  {% empty %}
+    <li>No se encontraron recomendaciones.</li>
+  {% endfor %}
+</ul>
