@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: tpi_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: tpi_backend
+      POSTGRES_USER: tpi_user
+      POSTGRES_PASSWORD: tpi_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

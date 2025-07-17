@@ -1,0 +1,100 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2.2em;
+}
+
+h2 {
+    color: #34495e;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-top: 30px;
+}
+
+.album-info {
+    background-color: #ecf0f1;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.album-info p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+.recommendations {
+    list-style: none;
+    padding: 0;
+}
+
+.recommendations li {
+    background-color: #f8f9fa;
+    margin-bottom: 15px;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+    transition: transform 0.2s;
+}
+
+.recommendations li:hover {
+    transform: translateX(5px);
+    background-color: #e9ecef;
+}
+
+.album-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.rating {
+    color: #e67e22;
+    font-weight: bold;
+}
+
+.no-results {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    padding: 20px;
+}
+
+.new-search-btn {
+    display: inline-block;
+    padding: 12px 25px;
+    background-color: #27ae60;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    margin-top: 20px;
+}
+
+.new-search-btn:hover {
+    background-color: #219a52;
+}
+
+.btn-container {
+    text-align: center;
+    margin-top: 30px;
+}
