@@ -3,102 +3,102 @@ from django.shortcuts import render
 import requests
 from .forms import AlbumSearchForm
 
-DISCOGS_TOKEN = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
-DISCOGS_API_URL = 'https://api.discogs.com/database/search'
+TOKEN_DISCOGS = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
+URL_API_DISCOGS = 'https://api.discogs.com/database/search'
 
-def get_album_details(album_id):
-    """Obtiene los detalles completos de un álbum usando su ID"""
-    detail_url = f"https://api.discogs.com/releases/{album_id}"
-    detail_params = {'token': DISCOGS_TOKEN}
-    detail_resp = requests.get(detail_url, params=detail_params)
+def obtener_detalles_album(id_album):
+
+    url_detalle = f"https://api.discogs.com/releases/{id_album}"
+    parametros_detalle = {'token': TOKEN_DISCOGS}
+    respuesta_detalle = requests.get(url_detalle, params=parametros_detalle)
     
-    if detail_resp.status_code == 200:
-        return detail_resp.json()
+    if respuesta_detalle.status_code == 200:
+        return respuesta_detalle.json()
     return None
 
-def extract_album_info(album_detail):
-    """Extrae la información relevante de los detalles del álbum"""
-    genero = album_detail.get('genres', [])
-    estilos = album_detail.get('styles', [])
-    puntuacion = album_detail.get('community', {}).get('rating', {}).get('average', 0)
-    cant_puntuaciones = album_detail.get('community', {}).get('rating', {}).get('count', 0)
-    artista_principal = album_detail.get('artists', [{}])[0].get('name', '') if album_detail.get('artists') else ''
+def extraer_informacion_album(detalle_album):
+    
+    genero = detalle_album.get('genres', [])
+    estilos = detalle_album.get('styles', [])
+    puntuacion = detalle_album.get('community', {}).get('rating', {}).get('average', 0)
+    cant_puntuaciones = detalle_album.get('community', {}).get('rating', {}).get('count', 0)
+    artista_principal = detalle_album.get('artists', [{}])[0].get('name', '') if detalle_album.get('artists') else ''
     
     return genero, estilos, puntuacion, cant_puntuaciones, artista_principal
 
-def process_main_album(album_principal):
-    """Procesa el álbum principal y extrae su información"""
+def procesar_album_principal(album_principal):
+   
     if 'id' in album_principal:
-        album_detail = get_album_details(album_principal['id'])
-        if album_detail:
-            print("Detalles del álbum:", album_detail.get('community', {}))  # Debug
+        detalle_album = obtener_detalles_album(album_principal['id'])
+        if detalle_album:
+            print("Detalles del álbum:", detalle_album.get('community', {}))  # Debug
             
-            genero, estilos, puntuacion, cant_puntuaciones, artista_principal = extract_album_info(album_detail)
+            genero, estilos, puntuacion, cant_puntuaciones, artista_principal = extraer_informacion_album(detalle_album)
             
             # Actualizar album_principal con información detallada
             album_principal.update({
                 'genre': genero,
                 'style': estilos,
-                'community': album_detail.get('community', {}),
+                'community': detalle_album.get('community', {}),
                 'artist': artista_principal
             })
             
             return genero, estilos, puntuacion, cant_puntuaciones, artista_principal
         else:
             print("Error obteniendo detalles del álbum")
-            return get_fallback_info(album_principal)
+            return obtener_informacion_respaldo(album_principal)
     else:
         print("No hay ID disponible para obtener detalles")
-        return get_fallback_info(album_principal)
+        return obtener_informacion_respaldo(album_principal)
 
-def get_fallback_info(album_principal):
-    """Obtiene información básica cuando no se pueden obtener detalles"""
+def obtener_informacion_respaldo(album_principal):
+    
     genero = album_principal.get('genre', [])
     estilos = album_principal.get('style', [])
     artista_principal = album_principal.get('artist', '')
     return genero, estilos, 0, 0, artista_principal
 
-def is_valid_recommendation(disco_detail, estilos, artista_principal, artistas_recomendados):
-    """Verifica si un disco cumple con los criterios para ser recomendado"""
-    rating = disco_detail.get('community', {}).get('rating', {}).get('average', 0)
-    count_ratings = disco_detail.get('community', {}).get('rating', {}).get('count', 0)
-    disco_estilos = disco_detail.get('styles', [])
-    artista_disco = disco_detail.get('artists', [{}])[0].get('name', '') if disco_detail.get('artists') else ''
+def es_recomendacion_valida(detalle_disco, estilos, artista_principal, artistas_recomendados):
+    
+    calificacion = detalle_disco.get('community', {}).get('rating', {}).get('average', 0)
+    cantidad_calificaciones = detalle_disco.get('community', {}).get('rating', {}).get('count', 0)
+    estilos_disco = detalle_disco.get('styles', [])
+    artista_disco = detalle_disco.get('artists', [{}])[0].get('name', '') if detalle_disco.get('artists') else ''
     
     # Verificar si TODOS los estilos del disco están en los estilos del álbum principal
-    estilos_principales_set = set(estilos)
-    disco_estilos_set = set(disco_estilos)
-    todos_estilos_coinciden = disco_estilos_set.issubset(estilos_principales_set)
+    conjunto_estilos_principales = set(estilos)
+    conjunto_estilos_disco = set(estilos_disco)
+    todos_estilos_coinciden = conjunto_estilos_disco.issubset(conjunto_estilos_principales)
     
-    return (rating >= 3.5 and 
-            count_ratings > 20 and 
+    return (calificacion >= 3.5 and 
+            cantidad_calificaciones > 20 and 
             todos_estilos_coinciden and
             artista_disco != artista_principal and
             artista_disco not in artistas_recomendados), artista_disco
 
-def search_similar_albums(params_similares, album_principal, estilos, artista_principal, artistas_recomendados, recomendaciones, search_type="estilo"):
-    """Busca álbumes similares basados en los parámetros dados"""
-    resp_similares = requests.get(DISCOGS_API_URL, params=params_similares)
-    similares = resp_similares.json().get('results', [])
+def buscar_albums_similares(parametros_similares, album_principal, estilos, artista_principal, artistas_recomendados, recomendaciones, tipo_busqueda="estilo"):
+    
+    respuesta_similares = requests.get(URL_API_DISCOGS, params=parametros_similares)
+    similares = respuesta_similares.json().get('results', [])
     
     for disco in similares:
         if 'id' in disco:
-            disco_detail = get_album_details(disco['id'])
+            detalle_disco = obtener_detalles_album(disco['id'])
             
-            if disco_detail:
-                is_valid, artista_disco = is_valid_recommendation(
-                    disco_detail, estilos, artista_principal, artistas_recomendados
+            if detalle_disco:
+                es_valida, artista_disco = es_recomendacion_valida(
+                    detalle_disco, estilos, artista_principal, artistas_recomendados
                 )
                 
-                if is_valid and disco['title'] != album_principal['title'] and disco not in recomendaciones:
+                if es_valida and disco['title'] != album_principal['title'] and disco not in recomendaciones:
                     # Actualizar disco con información detallada
                     disco.update({
-                        'community': disco_detail.get('community', {}),
-                        'styles': disco_detail.get('styles', []),
+                        'community': detalle_disco.get('community', {}),
+                        'styles': detalle_disco.get('styles', []),
                         'artist': artista_disco
                     })
                     
-                    print(f"Disco ({search_type}): {disco['title']}, Artista: {artista_disco}, Rating: {disco_detail.get('community', {}).get('rating', {}).get('average', 0)}")
+                    print(f"Disco ({tipo_busqueda}): {disco['title']}, Artista: {artista_disco}, Rating: {detalle_disco.get('community', {}).get('rating', {}).get('average', 0)}")
                     
                     recomendaciones.append(disco)
                     artistas_recomendados.add(artista_disco)
@@ -115,51 +115,51 @@ def buscar_album(request):
     artistas_recomendados = set()  # Para evitar artistas duplicados
     
     if request.method == 'POST':
-        form = AlbumSearchForm(request.POST)
-        if form.is_valid():
-            album = form.cleaned_data['album_name']
-            params = {
+        formulario = AlbumSearchForm(request.POST)
+        if formulario.is_valid():
+            album = formulario.cleaned_data['album_name']
+            parametros = {
                 'q': album,
                 'type': 'release',
-                'token': DISCOGS_TOKEN
+                'token': TOKEN_DISCOGS
             }
-            resp = requests.get(DISCOGS_API_URL, params=params)
-            resultados = resp.json().get('results', [])
+            respuesta = requests.get(URL_API_DISCOGS, params=parametros)
+            resultados = respuesta.json().get('results', [])
             
             if resultados:
                 album_principal = resultados[0]
                 print("Album principal encontrado:", album_principal)  # Debug
                 
-                # Procesar álbum principal
-                genero, estilos, puntuacion, cant_puntuaciones, artista_principal = process_main_album(album_principal)
+               
+                genero, estilos, puntuacion, cant_puntuaciones, artista_principal = procesar_album_principal(album_principal)
 
-                # Buscar álbumes similares por estilo
+                
                 if estilos:
                     for estilo in estilos:
-                        params_similares = {
+                        parametros_similares = {
                             'style': estilo,
                             'genre': genero,
                             'type': 'release',
-                            'token': DISCOGS_TOKEN,
+                            'token': TOKEN_DISCOGS,
                             'sort': 'want',
                             'per_page': 50
                         }
                         
-                        if search_similar_albums(params_similares, album_principal, estilos, 
-                                               artista_principal, artistas_recomendados, recomendaciones, "estilo"):
+                        if buscar_albums_similares(parametros_similares, album_principal, estilos, 
+                                                 artista_principal, artistas_recomendados, recomendaciones, "estilo"):
                             break
                 
                 # Si no hay suficientes recomendaciones, buscar por género
                 if len(recomendaciones) < 3 and genero:
-                    params_similares = {
+                    parametros_similares = {
                         'genre': genero[0],
                         'type': 'release',
-                        'token': DISCOGS_TOKEN,
+                        'token': TOKEN_DISCOGS,
                         'per_page': 50
                     }
                     
-                    search_similar_albums(params_similares, album_principal, estilos, 
-                                        artista_principal, artistas_recomendados, recomendaciones, "género")
+                    buscar_albums_similares(parametros_similares, album_principal, estilos, 
+                                          artista_principal, artistas_recomendados, recomendaciones, "género")
 
                 return render(request, 'albums/resultados.html', {
                     'album_principal': album_principal,
@@ -168,7 +168,7 @@ def buscar_album(request):
                     'cant_puntuaciones_principal': cant_puntuaciones,
                 })
     else:
-        form = AlbumSearchForm()
+        formulario = AlbumSearchForm()
 
-    return render(request, 'albums/buscar.html', {'form': form})
+    return render(request, 'albums/buscar.html', {'form': formulario})
 
