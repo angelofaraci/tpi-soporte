@@ -1,7 +1,13 @@
 # albums/views.py
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
 import requests
 from .forms import AlbumSearchForm
+from .auth_forms import CustomUserCreationForm, CustomAuthenticationForm
+from .models import SearchHistory
 
 TOKEN_DISCOGS = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
 URL_API_DISCOGS = 'https://api.discogs.com/database/search'
@@ -110,6 +116,7 @@ def buscar_albums_similares(parametros_similares, album_principal, estilos, arti
     
     return len(recomendaciones) >= 3
 
+@login_required
 def buscar_album(request):
     recomendaciones = []
     artistas_recomendados = set()  # Para evitar artistas duplicados
@@ -118,6 +125,13 @@ def buscar_album(request):
         formulario = AlbumSearchForm(request.POST)
         if formulario.is_valid():
             album = formulario.cleaned_data['album_name']
+            
+            # Save search to history
+            SearchHistory.objects.get_or_create(
+                user=request.user,
+                search_term=album
+            )
+            
             parametros = {
                 'q': album,
                 'type': 'release',
@@ -170,5 +184,63 @@ def buscar_album(request):
     else:
         formulario = AlbumSearchForm()
 
-    return render(request, 'albums/buscar.html', {'form': formulario})
+    # Get user's search history
+    search_history = SearchHistory.objects.filter(user=request.user).order_by('-search_date')[:10]
+    
+    return render(request, 'albums/buscar.html', {
+        'form': formulario,
+        'search_history': search_history
+    })
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('buscar_album')
+    
+    if request.method == 'POST':
+        form = CustomAuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            messages.success(request, f'¡Bienvenido, {user.username}!')
+            return redirect('buscar_album')
+        else:
+            messages.error(request, 'Por favor, corrige los errores a continuación.')
+    else:
+        form = CustomAuthenticationForm()
+    
+    return render(request, 'albums/login.html', {'form': form})
+
+def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect('buscar_album')
+    
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, f'¡Cuenta creada exitosamente! Bienvenido, {user.username}!')
+            return redirect('buscar_album')
+        else:
+            messages.error(request, 'Por favor, corrige los errores a continuación.')
+    else:
+        form = CustomUserCreationForm()
+    
+    return render(request, 'albums/signup.html', {'form': form})
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, '¡Has cerrado sesión correctamente!')
+    return redirect('login')
+
+@login_required
+def delete_search_history(request, history_id):
+    if request.method == 'POST':
+        try:
+            history_item = SearchHistory.objects.get(id=history_id, user=request.user)
+            history_item.delete()
+            return JsonResponse({'success': True})
+        except SearchHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Historial no encontrado'})
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
 

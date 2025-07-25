@@ -9,12 +9,67 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎵 Recomendador de Álbumes</h1>
+        <div class="header-container">
+            <h1>🎵 Recomendador de Álbumes</h1>
+            <div class="user-info">
+                <span class="welcome-text">Bienvenido, {{ user.username }}!</span>
+                <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
+            </div>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
             <button type="submit">Buscar Recomendaciones</button>
         </form>
+
+        {% if search_history %}
+            <div class="search-history">
+                <h3>Búsquedas recientes:</h3>
+                <div class="history-items">
+                    {% for history in search_history %}
+                        <div class="history-item">
+                            <span class="history-text" onclick="searchAgain('{{ history.search_term }}')">{{ history.search_term }}</span>
+                            <button class="delete-btn" onclick="deleteHistory({{ history.id }})">&times;</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
     </div>
+
+    <script>
+        function searchAgain(term) {
+            document.getElementById('id_album_name').value = term;
+        }
+
+        function deleteHistory(historyId) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta búsqueda del historial?')) {
+                fetch(`/delete-history/${historyId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error al eliminar la búsqueda');
+                    }
+                });
+            }
+        }
+    </script>
 </body>
 </html>
