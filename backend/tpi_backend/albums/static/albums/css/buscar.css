@@ -97,6 +97,23 @@ button:hover {
     text-decoration: none;
 }
 
+.listen-later-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    margin-right: 10px;
+}
+
+.listen-later-btn:hover {
+    background-color: #218838;
+    color: white;
+    text-decoration: none;
+}
+
 .alert {
     padding: 15px;
     margin-bottom: 20px;

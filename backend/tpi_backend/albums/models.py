@@ -119,8 +119,14 @@ class AlbumLabel(models.Model):
         unique_together = ['album', 'label']
 
 class AlbumFavorite(models.Model):
+    LIST_TYPES = [
+        ('favorite', 'Favorite'),
+        ('listen_later', 'Listen Later'),
+    ]
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     album = models.ForeignKey(Album, on_delete=models.CASCADE)
+    list_type = models.CharField(max_length=20, choices=LIST_TYPES, default='favorite')
     date_added = models.DateTimeField(auto_now_add=True)
     personal_notes = models.TextField(blank=True, null=True)
     personal_rating = models.IntegerField(
@@ -128,13 +134,15 @@ class AlbumFavorite(models.Model):
         blank=True,
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
+    is_listened = models.BooleanField(default=False)  # For listen later items
+    date_listened = models.DateTimeField(null=True, blank=True)
     
     class Meta:
-        unique_together = ['user', 'album']
+        unique_together = ['user', 'album', 'list_type']
         ordering = ['-date_added']
     
     def __str__(self):
-        return f"{self.user.username} - {self.album.title}"
+        return f"{self.user.username} - {self.get_list_type_display()}: {self.album.title}"
 
 class SearchHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

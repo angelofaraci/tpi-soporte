@@ -7,7 +7,7 @@ from django.http import JsonResponse
 import requests
 from .forms import AlbumSearchForm
 from .auth_forms import CustomUserCreationForm, CustomAuthenticationForm
-from .models import SearchHistory
+from .models import SearchHistory, Album, AlbumFavorite
 
 TOKEN_DISCOGS = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
 URL_API_DISCOGS = 'https://api.discogs.com/database/search'
@@ -243,4 +243,129 @@ def delete_search_history(request, history_id):
         except SearchHistory.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Historial no encontrado'})
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+@login_required
+def add_to_listen_later(request):
+    if request.method == 'POST':
+        import json
+        try:
+            # Get album data from the request
+            album_data = json.loads(request.body)
+            discogs_id = album_data.get('discogs_id')
+            title = album_data.get('title', '')
+            artist = album_data.get('artist', '')
+            year = album_data.get('year', '')
+            
+            # Create or get the album
+            album, created = Album.objects.get_or_create(
+                discogs_id=discogs_id,
+                defaults={
+                    'title': title,
+                    'year': year if year else None,
+                }
+            )
+            
+            # Add to listen later list
+            album_favorite, created = AlbumFavorite.objects.get_or_create(
+                user=request.user,
+                album=album,
+                list_type='listen_later'
+            )
+            
+            if created:
+                return JsonResponse({
+                    'success': True, 
+                    'message': f'"{title}" added to Listen Later list!'
+                })
+            else:
+                return JsonResponse({
+                    'success': False, 
+                    'message': f'"{title}" is already in your Listen Later list.'
+                })
+                
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def listen_later_list(request):
+    listen_later_albums = AlbumFavorite.objects.filter(user=request.user, list_type='listen_later')
+    return render(request, 'albums/listen_later.html', {
+        'listen_later_albums': listen_later_albums
+    })
+
+@login_required
+def remove_from_listen_later(request, listen_later_id):
+    if request.method == 'POST':
+        try:
+            listen_later_item = AlbumFavorite.objects.get(
+                id=listen_later_id, 
+                user=request.user,
+                list_type='listen_later'
+            )
+            album_title = listen_later_item.album.title
+            listen_later_item.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f'"{album_title}" removed from Listen Later list.'
+            })
+        except AlbumFavorite.DoesNotExist:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Album not found in your Listen Later list.'
+            })
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def mark_as_listened(request, listen_later_id):
+    if request.method == 'POST':
+        try:
+            from django.utils import timezone
+            listen_later_item = AlbumFavorite.objects.get(
+                id=listen_later_id, 
+                user=request.user,
+                list_type='listen_later'
+            )
+            listen_later_item.is_listened = True
+            listen_later_item.date_listened = timezone.now()
+            listen_later_item.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'"{listen_later_item.album.title}" marked as listened!'
+            })
+        except AlbumFavorite.DoesNotExist:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Album not found in your Listen Later list.'
+            })
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def mark_as_not_listened(request, listen_later_id):
+    if request.method == 'POST':
+        try:
+            listen_later_item = AlbumFavorite.objects.get(
+                id=listen_later_id, 
+                user=request.user,
+                list_type='listen_later'
+            )
+            listen_later_item.is_listened = False
+            listen_later_item.date_listened = None
+            listen_later_item.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'"{listen_later_item.album.title}" marked as not listened!'
+            })
+        except AlbumFavorite.DoesNotExist:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Album not found in your Listen Later list.'
+            })
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 

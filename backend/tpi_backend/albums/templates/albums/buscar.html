@@ -13,6 +13,7 @@
             <h1>🎵 Recomendador de Álbumes</h1>
             <div class="user-info">
                 <span class="welcome-text">Bienvenido, {{ user.username }}!</span>
+                <a href="{% url 'listen_later_list' %}" class="listen-later-btn">🎧 Listen Later</a>
                 <a href="{% url 'logout' %}" class="logout-btn">Cerrar Sesión</a>
             </div>
         </div>

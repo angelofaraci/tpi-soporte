@@ -6,9 +6,113 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultados - Recomendador de Álbumes</title>
     <link rel="stylesheet" type="text/css" href="{% static 'albums/css/resultados.css' %}">
+    <style>
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .nav-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-light {
+            background: white;
+            color: #333;
+        }
+
+        .btn-light:hover {
+            background: #f8f9fa;
+            transform: translateY(-1px);
+        }
+
+        .listen-later-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .listen-later-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .listen-later-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .album-item {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .success-message, .error-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .success-message {
+            background: #28a745;
+        }
+
+        .error-message {
+            background: #dc3545;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
+        <div class="top-nav">
+            <div class="nav-title">📀 Album Recommendations</div>
+            <div class="nav-buttons">
+                <a href="{% url 'listen_later_list' %}" class="btn btn-light">🎧 Listen Later</a>
+                <a href="{% url 'logout' %}" class="btn btn-light">Logout</a>
+            </div>
+        </div>
+
         <h1>📀 Resultados de Búsqueda</h1>
         
         <div class="album-info">
@@ -20,9 +124,19 @@
         <h2>🎯 Recomendaciones</h2>
         <ul class="recommendations">
             {% for disco in recomendaciones %}
-                <li>
+                <li class="album-item">
                     <div class="album-title">{{ disco.title }}</div>
+                    <p><strong>Artist:</strong> {{ disco.artist|default:"N/A" }}</p>
                     <p><strong>Puntuación:</strong> <span class="rating">{{ disco.community.rating.average|default:"N/A" }}/5.0</span> ({{ disco.community.rating.count }} valoraciones)</p>
+                    <button class="listen-later-btn" 
+                            onclick="addToListenLater(this, {
+                                'discogs_id': {{ disco.id|default:'null' }},
+                                'title': '{{ disco.title|escapejs }}',
+                                'artist': '{{ disco.artist|default:""|escapejs }}',
+                                'year': {{ disco.year|default:'null' }}
+                            })">
+                        + Add to Listen Later
+                    </button>
                 </li>
             {% empty %}
                 <li class="no-results">No se encontraron recomendaciones que cumplan con los criterios.</li>
@@ -33,5 +147,72 @@
             <a href="{% url 'buscar_album' %}" class="new-search-btn">🔍 Nueva Búsqueda</a>
         </div>
     </div>
+
+    <script>
+        function addToListenLater(button, albumData) {
+            // Disable button to prevent double-clicking
+            button.disabled = true;
+            button.textContent = 'Adding...';
+
+            fetch('/add-to-listen-later/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(albumData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    button.textContent = '✓ Added';
+                    button.style.background = '#6c757d';
+                } else {
+                    showMessage(data.message || 'Error adding album', 'error');
+                    button.disabled = false;
+                    button.textContent = '+ Add to Listen Later';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('An error occurred', 'error');
+                button.disabled = false;
+                button.textContent = '+ Add to Listen Later';
+            });
+        }
+
+        function showMessage(message, type) {
+            // Remove existing messages
+            const existingMessages = document.querySelectorAll('.success-message, .error-message');
+            existingMessages.forEach(msg => msg.remove());
+
+            // Create new message
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
 </body>
 </html>
