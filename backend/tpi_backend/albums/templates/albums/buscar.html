@@ -26,7 +26,7 @@
             {% endfor %}
         {% endif %}
         
-        <form method="post">
+        <form id="searchForm" method="post" onsubmit="handleSearch(event)">
             {% csrf_token %}
             {{ form.as_p }}
             <button type="submit">Buscar Recomendaciones</button>
@@ -50,6 +50,18 @@
     <script>
         function searchAgain(term) {
             document.getElementById('id_album_name').value = term;
+        }
+
+        async function handleSearch(event) {
+            event.preventDefault();
+            const form = document.getElementById('searchForm');
+            const formData = new FormData(form);
+
+            // Guardar el formulario para enviarlo después
+            sessionStorage.setItem('searchFormData', new URLSearchParams(formData).toString());
+            
+            // Redirigir a la página de búsqueda
+            window.location.href = "{% url 'buscando' %}";
         }
 
         function deleteHistory(historyId) {

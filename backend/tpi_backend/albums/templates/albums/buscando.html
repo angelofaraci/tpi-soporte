@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Buscando recomendaciones...</title>
+    <link rel="stylesheet" href="/static/albums/buscando.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+        .spinner {
+            border: 8px solid #eee;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h2 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="spinner"></div>
+    <h2>Buscando recomendaciones, por favor espera...</h2>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Recuperar los datos del formulario
+                const formData = sessionStorage.getItem('searchFormData');
+                if (!formData) {
+                    window.location.href = "{% url 'buscar_album' %}";
+                    return;
+                }
+
+                // Crear un formulario oculto y enviarlo
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'buscar_album' %}";
+                
+                // Agregar CSRF token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = '{{ csrf_token }}';
+                form.appendChild(csrfInput);
+
+                // Agregar los datos del formulario
+                const formParams = new URLSearchParams(formData);
+                for (const [key, value] of formParams) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+
+                // Limpiar sessionStorage
+                sessionStorage.removeItem('searchFormData');
+
+                // Agregar el formulario al documento y enviarlo
+                document.body.appendChild(form);
+                form.submit();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Hubo un error al realizar la búsqueda. Por favor, inténtalo de nuevo.');
+                window.location.href = "{% url 'buscar_album' %}";
+            }
+        });
+    </script>
+</body>
+</html>

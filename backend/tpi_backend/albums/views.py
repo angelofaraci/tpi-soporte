@@ -125,6 +125,7 @@ def search_album(request):
         form = AlbumSearchForm(request.POST)
         if form.is_valid():
             album = form.cleaned_data['album_name']
+            print(f"Iniciando búsqueda para el álbum: {album}")  # Debug
             
             # Save search to history
             SearchHistory.objects.get_or_create(
@@ -174,7 +175,7 @@ def search_album(request):
                     
                     search_similar_albums(similar_params, main_album, styles, 
                                         main_artist, recommended_artists, recommendations, "genre")
-
+                print("Total recommendations:", len(recommendations))  # Debug
                 return render(request, 'albums/resultados.html', {
                     'album_principal': main_album,
                     'recomendaciones': recommendations,
@@ -368,4 +369,8 @@ def mark_as_not_listened(request, listen_later_id):
             })
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def buscando_view(request):
+    return render(request, 'albums/buscando.html')
 
