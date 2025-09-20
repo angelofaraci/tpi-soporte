@@ -42,12 +42,12 @@
                                 ({{ disco.community.rating.count }} valoraciones)
                             </p>
                             <button class="btn btn-success w-100" 
-                                    onclick='addToListenLater(this, {
-                                        "discogs_id": "{{ disco.id|default:"" }}",
-                                        "title": "{{ disco.title|escapejs }}",
-                                        "artist": "{{ disco.artist|default:""|escapejs }}",
-                                        "year": "{{ disco.year|default:"" }}"
-                                    })'>
+                                    onclick="addToListenLater(this, {
+                                        'discogs_id': '{{ disco.id|default:null }}',
+                                        'title': '{{ disco.title|escapejs }}',
+                                        'artist': '{{ disco.artist|default:|escapejs }}',
+                                        'year': '{{ disco.year|default:null }}'
+                                    })">
                                 + Add to Listen Later
                             </button>
                         </div>

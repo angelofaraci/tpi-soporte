@@ -82,7 +82,7 @@ def is_valid_recommendation(album_detail, styles, main_artist, recommended_artis
             album_artist != main_artist and
             album_artist not in recommended_artists), album_artist
 
-def search_similar_albums(similar_params, main_album, styles, main_artist, recommended_artists, recommendations, search_type="style"):
+def search_similar_albums(similar_params, main_album, styles, main_artist, recommended_artists, recommendations, listen_later_discogs_ids, search_type="style"):
     
     similar_response = requests.get(URL_API_DISCOGS, params=similar_params)
     similar_albums = similar_response.json().get('results', [])
@@ -92,6 +92,10 @@ def search_similar_albums(similar_params, main_album, styles, main_artist, recom
             album_detail = get_album_details(album['id'])
             
             if album_detail:
+                # Skip if album is in listen later list
+                if album.get('id') in listen_later_discogs_ids:
+                    continue
+                    
                 is_valid, album_artist = is_valid_recommendation(
                     album_detail, styles, main_artist, recommended_artists
                 )
@@ -133,13 +137,27 @@ def search_album(request):
                 search_term=album
             )
             
+            # Get the user's listen later list
+            listen_later_discogs_ids = set(
+                AlbumFavorite.objects.filter(
+                    user=request.user, 
+                    list_type='listen_later'
+                ).values_list('album__discogs_id', flat=True)
+            )
+            
             params = {
                 'q': album,
                 'type': 'release',
                 'token': TOKEN_DISCOGS
             }
             response = requests.get(URL_API_DISCOGS, params=params)
-            results = response.json().get('results', [])
+            all_results = response.json().get('results', [])
+            
+            # Filter out albums that are already in listen later list
+            results = [
+                result for result in all_results 
+                if result.get('id') not in listen_later_discogs_ids
+            ]
             
             if results:
                 main_album = results[0]
@@ -161,7 +179,8 @@ def search_album(request):
                         }
                         
                         if search_similar_albums(similar_params, main_album, styles, 
-                                               main_artist, recommended_artists, recommendations, "style"):
+                                               main_artist, recommended_artists, recommendations,
+                                               listen_later_discogs_ids, "style"):
                             break
                 
                 # If not enough recommendations, search by genre
@@ -174,7 +193,8 @@ def search_album(request):
                     }
                     
                     search_similar_albums(similar_params, main_album, styles, 
-                                        main_artist, recommended_artists, recommendations, "genre")
+                                        main_artist, recommended_artists, recommendations,
+                                        listen_later_discogs_ids, "genre")
                 print("Total recommendations:", len(recommendations))  # Debug
                 return render(request, 'albums/resultados.html', {
                     'album_principal': main_album,

@@ -297,15 +297,15 @@
 
                 <div class="album-actions">
                     {% if not item.is_listened %}
-                    <button class="btn-small btn-success" onclick="markAsListened({{ item.id }})">
+                    <button class="btn-small btn-success" onclick="markAsListened('{{ item.id }}')">
                         ✓ Mark as Listened
                     </button>
                     {% else %}
-                    <button class="btn-small btn-warning" onclick="markAsNotListened({{ item.id }})">
+                    <button class="btn-small btn-warning" onclick="markAsNotListened('{{ item.id }}')">
                         ↺ Mark as Not Listened
                     </button>
                     {% endif %}
-                    <button class="btn-small btn-danger" onclick="removeFromList({{ item.id }})">
+                    <button class="btn-small btn-danger" onclick="removeFromList('{{ item.id }}')">
                         🗑️ Remove
                     </button>
                 </div>

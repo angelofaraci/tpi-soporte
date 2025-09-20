@@ -1,8 +1,11 @@
 # albums/urls.py
 from django.urls import path
+from django.shortcuts import redirect
 from . import views
 
 urlpatterns = [
+    # Root URL redirects to buscar_album
+    path('', lambda request: redirect('buscar_album'), name='home'),
     path('buscar_album/', views.search_album, name='buscar_album'),
     path('buscando/', views.buscando_view, name='buscando'),
     path('login/', views.login_view, name='login'),
