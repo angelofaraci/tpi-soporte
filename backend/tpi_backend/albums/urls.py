@@ -11,6 +11,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('signup/', views.signup_view, name='signup'),
     path('logout/', views.logout_view, name='logout'),
+    path('update-profile-picture/', views.update_profile_picture, name='update_profile_picture'),
     path('delete-history/<int:history_id>/', views.delete_search_history, name='delete_search_history'),
     path('listen-later/', views.listen_later_list, name='listen_later_list'),
     path('add-to-listen-later/', views.add_to_listen_later, name='add_to_listen_later'),

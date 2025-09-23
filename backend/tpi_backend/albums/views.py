@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 import requests
-from .forms import AlbumSearchForm
+from .forms import AlbumSearchForm, ProfilePictureForm
 from .auth_forms import CustomUserCreationForm, CustomAuthenticationForm
 from .models import SearchHistory, Album, AlbumFavorite
 
@@ -222,10 +222,10 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            messages.success(request, f'¡Bienvenido, {user.username}!')
+            messages.success(request, f'Welcome, {user.username}!')
             return redirect('buscar_album')
         else:
-            messages.error(request, 'Por favor, corrige los errores a continuación.')
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomAuthenticationForm()
     
@@ -240,10 +240,10 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, f'¡Cuenta creada exitosamente! Bienvenido, {user.username}!')
+            messages.success(request, f'Account created successfully! Welcome, {user.username}!')
             return redirect('buscar_album')
         else:
-            messages.error(request, 'Por favor, corrige los errores a continuación.')
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomUserCreationForm()
     
@@ -251,7 +251,7 @@ def signup_view(request):
 
 def logout_view(request):
     logout(request)
-    messages.success(request, '¡Has cerrado sesión correctamente!')
+    messages.success(request, 'You have successfully logged out!')
     return redirect('login')
 
 @login_required
@@ -262,8 +262,8 @@ def delete_search_history(request, history_id):
             history_item.delete()
             return JsonResponse({'success': True})
         except SearchHistory.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Historial no encontrado'})
-    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+            return JsonResponse({'success': False, 'error': 'History not found'})
+    return JsonResponse({'success': False, 'error': 'Method not allowed'})
 
 @login_required
 def add_to_listen_later(request):
@@ -393,4 +393,17 @@ def mark_as_not_listened(request, listen_later_id):
 @login_required
 def buscando_view(request):
     return render(request, 'albums/buscando.html')
+
+@login_required
+def update_profile_picture(request):
+    if request.method == 'POST':
+        form = ProfilePictureForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile picture updated successfully!')
+            return JsonResponse({'success': True, 'message': 'Profile picture updated successfully!'})
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid file format. Please upload an image.'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
