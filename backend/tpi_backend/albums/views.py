@@ -8,6 +8,7 @@ import requests
 from .forms import AlbumSearchForm, ProfilePictureForm
 from .auth_forms import CustomUserCreationForm, CustomAuthenticationForm
 from .models import SearchHistory, Album, AlbumFavorite
+from .enrichment import enqueue_enrichment
 
 TOKEN_DISCOGS = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
 URL_API_DISCOGS = 'https://api.discogs.com/database/search'
@@ -285,6 +286,9 @@ def add_to_listen_later(request):
                     'year': year if year else None,
                 }
             )
+            # Trigger async enrichment if needed
+            if created or not album.is_enriched:
+                enqueue_enrichment(discogs_id)
             
             # Add to listen later list
             album_favorite, created = AlbumFavorite.objects.get_or_create(

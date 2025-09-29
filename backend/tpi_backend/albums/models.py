@@ -72,6 +72,9 @@ class Album(models.Model):
     # Metadata
     date_added = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
+    # Enrichment status
+    is_enriched = models.BooleanField(default=False)
+    enrichment_date = models.DateTimeField(null=True, blank=True)
     
     # Relationship with users (favorites)
     favorite_users = models.ManyToManyField(
@@ -87,6 +90,7 @@ class Album(models.Model):
             models.Index(fields=['title']),
             models.Index(fields=['year']),
             models.Index(fields=['average_rating']),
+            models.Index(fields=['is_enriched']),
         ]
     
     def __str__(self):
