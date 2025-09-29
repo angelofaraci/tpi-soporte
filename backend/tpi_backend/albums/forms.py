@@ -17,5 +17,3 @@ class ProfilePictureForm(forms.ModelForm):
         }
 
 
-class AlbumForm(forms.Form):
-    nombre = forms.CharField(label='Nombre del álbum', max_length=100)
