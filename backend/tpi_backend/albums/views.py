@@ -3,12 +3,13 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpRequest
 import requests
 from .forms import AlbumSearchForm, ProfilePictureForm
 from .auth_forms import CustomUserCreationForm, CustomAuthenticationForm
 from .models import SearchHistory, Album, AlbumFavorite
 from .enrichment import enqueue_enrichment
+from .ai_agent import generate_album_description
 
 TOKEN_DISCOGS = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
 URL_API_DISCOGS = 'https://api.discogs.com/database/search'
@@ -410,4 +411,37 @@ def update_profile_picture(request):
             return JsonResponse({'success': False, 'error': 'Invalid file format. Please upload an image.'})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@login_required
+def album_description_api(request: HttpRequest):
+    """Generate a brief album description via AI without storing it.
+    POST JSON body expected: {"title": str, "artist": str?, "year": str?, "genres": list?, "styles": list?}
+    Response: {"has_info": bool, "description": str}
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+    try:
+        import json
+        data = json.loads(request.body or '{}')
+        title = (data.get('title') or '').strip()
+        if not title:
+            return JsonResponse({'success': False, 'error': 'Missing album title'}, status=400)
+
+        artist = (data.get('artist') or '') or None
+        year = (str(data.get('year')) if data.get('year') is not None else None)
+        genres = data.get('genres') if isinstance(data.get('genres'), list) else None
+        styles = data.get('styles') if isinstance(data.get('styles'), list) else None
+
+        has_info, message = generate_album_description(
+            album_title=title,
+            artist=artist,
+            year=year,
+            genres=genres,
+            styles=styles,
+        )
+        return JsonResponse({'success': True, 'has_info': has_info, 'description': message})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': 'Failed to process request'}, status=500)
 

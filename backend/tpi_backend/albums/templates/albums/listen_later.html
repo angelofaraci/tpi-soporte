@@ -71,7 +71,14 @@
                     <button class="btn-small btn-danger" onclick="removeFromList('{{ item.id }}')">
                         🗑️ Remove
                     </button>
+                    <button class="btn-small" style="background:#0d6efd;color:#fff" onclick='generateAIDescription(this, {
+                        "title": "{{ item.album.title|escapejs }}",
+                        "year": "{{ item.album.year|default:"" }}"
+                    })'>
+                        ✨ AI Description
+                    </button>
                 </div>
+                <div class="ai-description small" style="display:none;margin-top:8px;color:#6c757d"></div>
             </div>
             {% endfor %}
         </div>
@@ -166,6 +173,44 @@
                 }
             }
             return cookieValue;
+        }
+
+        async function generateAIDescription(button, albumData) {
+            const card = button.closest('.album-card');
+            const output = card.querySelector('.ai-description');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Generating...';
+            output.style.display = 'none';
+            output.textContent = '';
+            try {
+                const resp = await fetch('/ai/album-description/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(albumData)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    output.style.display = 'block';
+                    output.textContent = data.description;
+                    if (!data.has_info) {
+                        output.style.color = '#b08900';
+                    } else {
+                        output.style.color = '#6c757d';
+                    }
+                } else {
+                    alert(data.error || 'AI request failed');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('AI request failed');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
         }
     </script>
 </body>

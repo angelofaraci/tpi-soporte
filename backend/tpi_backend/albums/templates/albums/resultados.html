@@ -41,15 +41,26 @@
                                 <span class="rating">{{ disco.community.rating.average|default:"N/A" }}/5.0</span> 
                                 ({{ disco.community.rating.count }} valoraciones)
                             </p>
-                            <button class="btn btn-success w-100" 
-                                    onclick='addToListenLater(this, {
-                                        "discogs_id": "{{ disco.id|default:"" }}",
-                                        "title": "{{ disco.title|escapejs }}",
-                                        "artist": "{{ disco.artist|default:""|escapejs }}",
-                                        "year": "{{ disco.year|default:"" }}"
-                                    })'>
-                                + Add to Listen Later
-                            </button>
+                            <div class="d-grid gap-2 mb-2">
+                                <button class="btn btn-outline-primary w-100"
+                                        onclick='generateAIDescription(this, {
+                                            "title": "{{ disco.title|escapejs }}",
+                                            "artist": "{{ disco.artist|default:""|escapejs }}",
+                                            "year": "{{ disco.year|default:"" }}"
+                                        })'>
+                                    ✨ AI Description
+                                </button>
+                                <button class="btn btn-success w-100" 
+                                        onclick='addToListenLater(this, {
+                                            "discogs_id": "{{ disco.id|default:"" }}",
+                                            "title": "{{ disco.title|escapejs }}",
+                                            "artist": "{{ disco.artist|default:""|escapejs }}",
+                                            "year": "{{ disco.year|default:"" }}"
+                                        })'>
+                                    + Add to Listen Later
+                                </button>
+                            </div>
+                            <div class="ai-description small text-muted" style="display:none;"></div>
                         </div>
                     </div>
                 {% empty %}
@@ -127,6 +138,44 @@
                 }
             }
             return cookieValue;
+        }
+
+        async function generateAIDescription(button, albumData) {
+            const card = button.closest('.card-body');
+            const output = card.querySelector('.ai-description');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Generating...';
+            output.style.display = 'none';
+            output.textContent = '';
+            try {
+                const resp = await fetch('/ai/album-description/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(albumData)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    output.style.display = 'block';
+                    output.textContent = data.description;
+                    if (!data.has_info) {
+                        output.classList.add('text-warning');
+                    } else {
+                        output.classList.remove('text-warning');
+                    }
+                } else {
+                    showMessage(data.error || 'AI request failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('AI request failed', 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
         }
     </script>
 </body>

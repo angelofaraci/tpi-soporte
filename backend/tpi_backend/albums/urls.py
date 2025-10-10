@@ -18,4 +18,5 @@ urlpatterns = [
     path('remove-from-listen-later/<int:listen_later_id>/', views.remove_from_listen_later, name='remove_from_listen_later'),
     path('mark-as-listened/<int:listen_later_id>/', views.mark_as_listened, name='mark_as_listened'),
     path('mark-as-not-listened/<int:listen_later_id>/', views.mark_as_not_listened, name='mark_as_not_listened'),
+    path('ai/album-description/', views.album_description_api, name='album_description_api'),
 ]

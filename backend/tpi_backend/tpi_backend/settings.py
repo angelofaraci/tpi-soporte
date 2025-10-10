@@ -11,9 +11,21 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+try:
+    from dotenv import load_dotenv
+except Exception:
+    load_dotenv = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load local .env if python-dotenv is available (for dev convenience)
+if load_dotenv is not None:
+    # Expect .env at repository/backend/.env
+    env_path = BASE_DIR.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
 
 
 # Quick-start development settings - unsuitable for production

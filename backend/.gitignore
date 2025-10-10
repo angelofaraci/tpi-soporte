@@ -1,2 +1,5 @@
 # Ignore uploaded avatars
 media/avatars/
+
+# Local environment files
+.env
