@@ -66,25 +66,33 @@ def get_fallback_information(main_album):
     main_artist = main_album.get('artist', '')
     return genre, styles, 0, 0, main_artist
 
-def is_valid_recommendation(album_detail, styles, main_artist, recommended_artists):
+def is_valid_recommendation(album_detail, styles, main_artist, recommended_artists, genres=None, search_type="style"):
     
     rating = album_detail.get('community', {}).get('rating', {}).get('average', 0)
     rating_count = album_detail.get('community', {}).get('rating', {}).get('count', 0)
     album_styles = album_detail.get('styles', [])
+    album_genres = album_detail.get('genres', [])
     album_artist = album_detail.get('artists', [{}])[0].get('name', '') if album_detail.get('artists') else ''
     
-    # Check if ALL album styles are in the main album styles
-    main_styles_set = set(styles)
-    album_styles_set = set(album_styles)
-    all_styles_match = album_styles_set.issubset(main_styles_set)
+    # Different validation based on search type
+    if search_type == "style":
+        # Check if ALL album styles are in the main album styles
+        main_styles_set = set(styles)
+        album_styles_set = set(album_styles)
+        style_or_genre_match = album_styles_set.issubset(main_styles_set)
+    else:  # search_type == "genre"
+        # Check if album has at least one genre in common with main album
+        main_genres_set = set(genres) if genres else set()
+        album_genres_set = set(album_genres)
+        style_or_genre_match = bool(main_genres_set & album_genres_set)
     
     return (rating >= 3.5 and 
             rating_count > 20 and 
-            all_styles_match and
+            style_or_genre_match and
             album_artist != main_artist and
             album_artist not in recommended_artists), album_artist
 
-def search_similar_albums(similar_params, main_album, styles, main_artist, recommended_artists, recommendations, listen_later_discogs_ids, search_type="style"):
+def search_similar_albums(similar_params, main_album, styles, main_artist, recommended_artists, recommendations, listen_later_discogs_ids, genres=None, search_type="style"):
     
     similar_response = requests.get(URL_API_DISCOGS, params=similar_params)
     similar_albums = similar_response.json().get('results', [])
@@ -99,7 +107,7 @@ def search_similar_albums(similar_params, main_album, styles, main_artist, recom
                     continue
                     
                 is_valid, album_artist = is_valid_recommendation(
-                    album_detail, styles, main_artist, recommended_artists
+                    album_detail, styles, main_artist, recommended_artists, genres, search_type
                 )
                 
                 if is_valid and album['title'] != main_album['title'] and album not in recommendations:
@@ -182,7 +190,7 @@ def search_album(request):
                         
                         if search_similar_albums(similar_params, main_album, styles, 
                                                main_artist, recommended_artists, recommendations,
-                                               listen_later_discogs_ids, "style"):
+                                               listen_later_discogs_ids, genre, "style"):
                             break
                 
                 # If not enough recommendations, search by genre
@@ -196,7 +204,7 @@ def search_album(request):
                     
                     search_similar_albums(similar_params, main_album, styles, 
                                         main_artist, recommended_artists, recommendations,
-                                        listen_later_discogs_ids, "genre")
+                                        listen_later_discogs_ids, genre, "genre")
                 print("Total recommendations:", len(recommendations))  # Debug
                 return render(request, 'albums/resultados.html', {
                     'album_principal': main_album,

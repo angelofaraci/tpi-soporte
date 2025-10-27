@@ -36,7 +36,6 @@
                     <div class="card">
                         <div class="card-body">
                             <h3 class="card-title h5">{{ disco.title }}</h3>
-                            <p class="card-text"><strong>Artist:</strong> {{ disco.artist|default:"N/A" }}</p>
                             <p class="card-text"><strong>Rating:</strong> 
                                 <span class="rating">{{ disco.community.rating.average|default:"N/A" }}/5.0</span> 
                                 ({{ disco.community.rating.count }} ratings)
