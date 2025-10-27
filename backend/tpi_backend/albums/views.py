@@ -317,8 +317,13 @@ def add_to_listen_later(request):
 @login_required
 def listen_later_list(request):
     listen_later_albums = AlbumFavorite.objects.filter(user=request.user, list_type='listen_later')
+    listened_count = listen_later_albums.filter(is_listened=True).count()
+    not_listened_count = listen_later_albums.filter(is_listened=False).count()
+    
     return render(request, 'albums/listen_later.html', {
-        'listen_later_albums': listen_later_albums
+        'listen_later_albums': listen_later_albums,
+        'listened_count': listened_count,
+        'not_listened_count': not_listened_count,
     })
 
 @login_required

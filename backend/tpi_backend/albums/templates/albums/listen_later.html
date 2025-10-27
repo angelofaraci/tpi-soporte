@@ -27,11 +27,11 @@
                     <p>Total Albums</p>
                 </div>
                 <div class="stat-item">
-                    <h3>{{ listen_later_albums|length|add:"-1"|add:"1" }}</h3>
+                    <h3>{{ not_listened_count }}</h3>
                     <p>To Listen</p>
                 </div>
                 <div class="stat-item">
-                    <h3>0</h3>
+                    <h3>{{ listened_count }}</h3>
                     <p>Listened</p>
                 </div>
             </div>
