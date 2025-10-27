@@ -1,5 +1,5 @@
 # Ignore uploaded avatars
-media/avatars/
+tpi_backend/media/avatars/
 
 # Local environment files
 .env

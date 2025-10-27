@@ -1,19 +1,19 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados - Recomendador de Álbumes</title>
+    <title>Results - Album Recommender</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'albums/css/style.css' %}">
 </head>
 <body>
     <div class="container">
         <div class="header-container">
-            <h1>Resultados de la búsqueda</h1>
+            <h1>Search Results</h1>
             <div class="nav-buttons">
-                <a href="{% url 'buscar_album' %}" class="btn btn-secondary">Nueva Búsqueda</a>
+                <a href="{% url 'buscar_album' %}" class="btn btn-secondary">New Search</a>
                 <a href="{% url 'listen_later_list' %}" class="btn btn-primary">Listen Later</a>
             </div>
         </div>
@@ -23,23 +23,23 @@
                 <div class="card-body">
                     <h2 class="card-title">🎵 {{ album_principal.title }}</h2>
                     <div class="card-text">
-                        <p><strong>Género:</strong> {{ album_principal.genre|join:", "|default:"N/A" }}</p>
-                        <p><strong>Puntuación:</strong> <span class="rating">{{ puntuacion_principal|default:"N/A" }}</span> 
-                        ({{ cant_puntuaciones_principal }} valoraciones)</p>
+                        <p><strong>Genre:</strong> {{ album_principal.genre|join:", "|default:"N/A" }}</p>
+                        <p><strong>Rating:</strong> <span class="rating">{{ puntuacion_principal|default:"N/A" }}</span> 
+                        ({{ cant_puntuaciones_principal }} ratings)</p>
                     </div>
                 </div>
             </div>
 
-            <h2 class="mb-4">🎯 Recomendaciones</h2>
+            <h2 class="mb-4">Recommendations</h2>
             <div class="grid">
                 {% for disco in recomendaciones %}
                     <div class="card">
                         <div class="card-body">
                             <h3 class="card-title h5">{{ disco.title }}</h3>
                             <p class="card-text"><strong>Artist:</strong> {{ disco.artist|default:"N/A" }}</p>
-                            <p class="card-text"><strong>Puntuación:</strong> 
+                            <p class="card-text"><strong>Rating:</strong> 
                                 <span class="rating">{{ disco.community.rating.average|default:"N/A" }}/5.0</span> 
-                                ({{ disco.community.rating.count }} valoraciones)
+                                ({{ disco.community.rating.count }} ratings)
                             </p>
                             <div class="d-grid gap-2 mb-2">
                                 <button class="btn btn-outline-primary w-100"
@@ -65,7 +65,7 @@
                     </div>
                 {% empty %}
                     <div class="alert alert-info">
-                        No se encontraron recomendaciones que cumplan con los criterios.
+                        No recommendations found that meet the criteria.
                     </div>
                 {% endfor %}
             </div>
@@ -90,19 +90,16 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message, 'success');
                     button.textContent = '✓ Added';
                     button.classList.remove('btn-success');
                     button.classList.add('btn-secondary');
                 } else {
-                    showMessage(data.message || 'Error adding album', 'error');
                     button.disabled = false;
                     button.textContent = '+ Add to Listen Later';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showMessage('An error occurred', 'error');
                 button.disabled = false;
                 button.textContent = '+ Add to Listen Later';
             });
