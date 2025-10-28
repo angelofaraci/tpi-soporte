@@ -1,4 +1,5 @@
 # albums/views.py
+import os
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,7 @@ from .models import SearchHistory, Album, AlbumFavorite
 from .enrichment import enqueue_enrichment
 from .ai_agent import generate_album_description
 
-TOKEN_DISCOGS = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
+TOKEN_DISCOGS = os.getenv('DISCOGS_TOKEN')
 URL_API_DISCOGS = 'https://api.discogs.com/database/search'
 
 def get_album_details(album_id):

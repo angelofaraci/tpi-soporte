@@ -1,10 +1,11 @@
+import os
 import threading
 import requests
 from django.utils import timezone
 from django.db import transaction
 from .models import Album, Artist, Label, AlbumArtist, AlbumLabel
 
-TOKEN_DISCOGS = 'adJIGzPXZSXQcnzMpfLLOGuZgJaTEHjYUUxIvIBY'
+TOKEN_DISCOGS = os.getenv('DISCOGS_TOKEN')
 
 DETAIL_URL_TEMPLATE = "https://api.discogs.com/releases/{id}"
 
